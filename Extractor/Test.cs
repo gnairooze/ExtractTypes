@@ -1,12 +1,12 @@
-﻿using ExtractTypes.Business.Models;
+﻿using ExtractTypes.Business;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Text;
 
-namespace ExtractTypes.Business
+namespace Extractor
 {
-    public class Test
+    class Test
     {
         public void sample()
         {
@@ -71,9 +71,24 @@ namespace ExtractTypes.Business
         public void sample4()
         {
             Core core = new Core();
-            var extractedType = core.ExtractType(@"c:\temp\8\Projects.DTO.dll", "LinkDev.GAFIFreeZones.Integration.Projects.DTO.Profile");
+            var extractedType = core.ExtractType(@"c:\temp\8\LinkDev.FreeZones.ExecutionDepartment.DTO.dll", "LinkDev.FreeZones.ExecutionDepartment.DTO.Endorsement.ExportedToAbroadEndoresmentDTO");
 
             Console.WriteLine(extractedType.ToString());
+        }
+
+        public void sample5()
+        {
+            Core core = new Core();
+            var extractedType = core.ExtractType(@"c:\temp\8\LinkDev.FreeZones.ExecutionDepartment.DTO.dll", "LinkDev.FreeZones.ExecutionDepartment.DTO.Endorsement.ExportedToAbroadEndoresmentDTO");
+
+            FileManagerCore.Controller fileController = new FileManagerCore.Controller();
+            fileController.SaveFile(false, $"{extractedType.TypeName}.csv", "ID,FullName,Name,Type");
+
+            for (int i = 0; i < extractedType.Items.Count; i++)
+            {
+                var item = extractedType.Items[i];
+                fileController.SaveFile(true, $"{extractedType.TypeName}.csv", $"{item.ID},{item.FullName},{item.Name},{item.Type}");
+            }
         }
     }
 }

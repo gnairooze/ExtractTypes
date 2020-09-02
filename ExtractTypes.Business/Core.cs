@@ -74,6 +74,7 @@ namespace ExtractTypes.Business
             var type = getTypes(assemblyPath, typeFullName)[0];
             extractedType.AssemblyFullName = type.AssemblyQualifiedName;
             extractedType.TypeFullName = type.FullName;
+            extractedType.TypeName = type.Name;
 
             int counter = 1;
             FillProperties(extractedType, type, ref counter, string.Empty);

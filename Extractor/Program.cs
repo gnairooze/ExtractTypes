@@ -6,8 +6,8 @@ namespace Extractor
     {
         static void Main(string[] args)
         {
-            ExtractTypes.Business.Test test = new ExtractTypes.Business.Test();
-            test.sample4();
+            Test test = new Test();
+            test.sample5();
         }
 
 

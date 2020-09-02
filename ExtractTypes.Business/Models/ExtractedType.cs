@@ -12,6 +12,7 @@ namespace ExtractTypes.Business.Models
         }
 
         public string TypeFullName { get; set; }
+        public string TypeName { get; set; }
         public string AssemblyFullName { get; set; }
         public List<ExtractedItem> Items { get; private set; }
 

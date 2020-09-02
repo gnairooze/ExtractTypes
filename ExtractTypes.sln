@@ -7,6 +7,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Extractor", "Extractor\Extr
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ExtractTypes.Business", "ExtractTypes.Business\ExtractTypes.Business.csproj", "{000B6737-97DA-41B2-8E23-1DA68E8A1205}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FileManagerCore", "FileManagerCore\FileManagerCore.csproj", "{3A6226FB-CF36-467C-AA46-F149DB3A0D73}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +23,10 @@ Global
 		{000B6737-97DA-41B2-8E23-1DA68E8A1205}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{000B6737-97DA-41B2-8E23-1DA68E8A1205}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{000B6737-97DA-41B2-8E23-1DA68E8A1205}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3A6226FB-CF36-467C-AA46-F149DB3A0D73}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3A6226FB-CF36-467C-AA46-F149DB3A0D73}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3A6226FB-CF36-467C-AA46-F149DB3A0D73}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3A6226FB-CF36-467C-AA46-F149DB3A0D73}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
