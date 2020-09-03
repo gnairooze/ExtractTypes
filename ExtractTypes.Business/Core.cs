@@ -8,9 +8,38 @@ namespace ExtractTypes.Business
 {
     public class Core
     {
-        protected Assembly LoadAssembly(string assemblyPath)
+        public List<string> ExtractTypesNames(string assemblyPath)
         {
-            return Assembly.LoadFrom(assemblyPath);
+            Type[] types = getTypes(assemblyPath);
+
+            var query = from type in types
+                        select type.FullName;
+            return query.ToList();
+        }
+
+        public List<string> ExtractTypePropertiesNames(string assemblyPath, string typeFullName)
+        {
+            var properties = getTypeProperties(assemblyPath, typeFullName);
+
+            var names = (from property in properties
+                        select property.Name).ToList();
+
+            return names;
+        }
+
+        public Models.ExtractedType ExtractType(string assemblyPath, string typeFullName)
+        {
+            Models.ExtractedType extractedType = new Models.ExtractedType();
+
+            var type = getTypes(assemblyPath, typeFullName)[0];
+            extractedType.AssemblyFullName = type.AssemblyQualifiedName;
+            extractedType.TypeFullName = type.FullName;
+            extractedType.TypeName = type.Name;
+
+            int counter = 1;
+            fillProperties(extractedType, type, ref counter, string.Empty);
+
+            return extractedType;
         }
 
         protected Type[] getTypes(string assemblyPath, string typeFullName = null)
@@ -48,41 +77,7 @@ namespace ExtractTypes.Business
             return types[0].GetProperties();
         }
 
-        public List<string> ExtractTypesNames(string assemblyPath)
-        {
-            Type[] types = getTypes(assemblyPath);
-
-            var query = from type in types
-                        select type.FullName;
-            return query.ToList();
-        }
-
-        public List<string> ExtractTypePropertiesNames(string assemblyPath, string typeFullName)
-        {
-            var properties = getTypeProperties(assemblyPath, typeFullName);
-
-            var names = (from property in properties
-                        select property.Name).ToList();
-
-            return names;
-        }
-
-        public Models.ExtractedType ExtractType(string assemblyPath, string typeFullName)
-        {
-            Models.ExtractedType extractedType = new Models.ExtractedType();
-
-            var type = getTypes(assemblyPath, typeFullName)[0];
-            extractedType.AssemblyFullName = type.AssemblyQualifiedName;
-            extractedType.TypeFullName = type.FullName;
-            extractedType.TypeName = type.Name;
-
-            int counter = 1;
-            FillProperties(extractedType, type, ref counter, string.Empty);
-
-            return extractedType;
-        }
-
-        protected void FillProperties(Models.ExtractedType extractedType, Type type, ref int counter, string propertyPath)
+        protected void fillProperties(Models.ExtractedType extractedType, Type type, ref int counter, string propertyPath)
         {
             var properties = type.GetProperties();
 
@@ -97,20 +92,20 @@ namespace ExtractTypes.Business
                 };
                 extractedType.Items.Add(extractItem);
 
-                if (!IsSimple(property.PropertyType))
+                if (!isSimple(property.PropertyType))
                 {
-                    FillProperties(extractedType, property.PropertyType, ref counter, extractItem.FullName);
+                    fillProperties(extractedType, property.PropertyType, ref counter, extractItem.FullName);
                 }
             }
         }
 
-        protected bool IsSimple(Type type)
+        protected bool isSimple(Type type)
         {
             var typeInfo = type.GetTypeInfo();
             if (typeInfo.IsGenericType && typeInfo.GetGenericTypeDefinition() == typeof(Nullable<>))
             {
                 // nullable type, check if the nested type is simple.
-                return IsSimple(typeInfo.GetGenericArguments()[0]);
+                return isSimple(typeInfo.GetGenericArguments()[0]);
             }
             return typeInfo.IsPrimitive
               || typeInfo.IsEnum
@@ -118,6 +113,11 @@ namespace ExtractTypes.Business
               || type.Equals(typeof(decimal))
               || type.Equals(typeof(DateTime))
               || type.Equals(typeof(Guid));
+        }
+
+        protected string getTypeName(Type type)
+        {
+            return type.Name;
         }
     }
 }
