@@ -3,11 +3,13 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Text;
 
 namespace ExtractTypes.Business
 {
     public class Core
     {
+        protected List<string> _ReservedTypes = new List<string> { "System.String", "System.Decimal", "System.DateTime", "System.Guid" };
         public List<string> ExtractTypesNames(string assemblyPath)
         {
             Type[] types = getTypes(assemblyPath);
@@ -37,7 +39,7 @@ namespace ExtractTypes.Business
             extractedType.TypeName = type.Name;
 
             int counter = 1;
-            fillProperties(extractedType, type, ref counter, string.Empty);
+            fillProperties(extractedType, type, ref counter, string.Empty, new List<string>());
 
             return extractedType;
         }
@@ -77,32 +79,77 @@ namespace ExtractTypes.Business
             return types[0].GetProperties();
         }
 
-        protected void fillProperties(Models.ExtractedType extractedType, Type type, ref int counter, string propertyPath)
+        protected void fillProperties(Models.ExtractedType extractedType, Type type, ref int counter, string propertyPath, List<string> parents)
         {
             var properties = type.GetProperties();
 
             foreach (var property in properties)
             {
+                string propertyName = getPropertyName(property);
+
                 var extractItem = new ExtractedItem()
                 {
                     ID = counter++,
-                    FullName = $"{propertyPath}.{property.Name}",
-                    Name = property.Name,
-                    Type = property.PropertyType.FullName
+                    PathName = $"{propertyPath}.{propertyName}",
+                    Name = propertyName,
+                    Type = GetTypeName(property.PropertyType),
+                    IsNullable = isNullable(property.PropertyType)
                 };
-                extractedType.Items.Add(extractItem);
+                extractItem.Parents.AddRange(parents);
+                extractedType.Fields.Add(extractItem);
 
-                if (!isSimple(property.PropertyType))
+                Console.WriteLine(extractItem.ToString());
+
+                var propertyEnhancedType = GetTypeEnhanced(property.PropertyType);
+                
+                
+                if (!isSimple(propertyEnhancedType) && parents.IndexOf(extractItem.Name) == -1)
                 {
-                    fillProperties(extractedType, property.PropertyType, ref counter, extractItem.FullName);
+                    parents.Add(propertyName);
+                    fillProperties(extractedType, propertyEnhancedType, ref counter, extractItem.PathName, parents);
                 }
             }
         }
 
-        protected bool isSimple(Type type)
+        private string getPropertyName(PropertyInfo property)
+        {
+            var interfaces = property.PropertyType.GetInterfaces();
+
+            bool isCollection = interfaces.Any(type => type.Name == "IList" || type.Name == "ICollection" || type.Name == "IEnumerable" || type.Name == "IQueryable") && property.PropertyType != typeof(string);
+            
+            if (isCollection)
+            {
+                return $"{property.Name}[]";
+            }
+
+            return property.Name;
+        }
+
+        private Type GetTypeEnhanced(Type type)
+        {
+            var typeInfo = type.GetTypeInfo();
+            if (typeInfo.IsGenericType && typeInfo.GetGenericTypeDefinition() != typeof(Nullable<>))
+            {
+                return typeInfo.GetGenericArguments()[0];
+            }
+
+            return type;
+        }
+
+        protected bool isNullable(Type type)
         {
             var typeInfo = type.GetTypeInfo();
             if (typeInfo.IsGenericType && typeInfo.GetGenericTypeDefinition() == typeof(Nullable<>))
+            {
+                return true;
+            }
+
+            return false;
+        }
+        protected bool isSimple(Type type)
+        {
+            var typeInfo = type.GetTypeInfo();
+            if (isNullable(type))
             {
                 // nullable type, check if the nested type is simple.
                 return isSimple(typeInfo.GetGenericArguments()[0]);
@@ -115,8 +162,23 @@ namespace ExtractTypes.Business
               || type.Equals(typeof(Guid));
         }
 
-        protected string getTypeName(Type type)
+        public string GetTypeName(Type type)
         {
+            if (isNullable(type))
+            {
+                return $"Nullable<{type.GetGenericArguments()[0].Name}>";
+            }
+
+            if (type.Name.Contains("`1"))
+            {
+                StringBuilder bld = new StringBuilder();
+                bld.Append(type.Name.Replace("`1", ""));
+                bld.Append("<");
+                bld.Append(type.GetGenericArguments()[0].Name);
+                bld.Append(">");
+                return bld.ToString();
+            }
+
             return type.Name;
         }
     }

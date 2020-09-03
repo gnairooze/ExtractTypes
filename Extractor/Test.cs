@@ -82,13 +82,63 @@ namespace Extractor
             var extractedType = core.ExtractType(@"c:\temp\8\LinkDev.FreeZones.ExecutionDepartment.DTO.dll", "LinkDev.FreeZones.ExecutionDepartment.DTO.Endorsement.ExportedToAbroadEndoresmentDTO");
 
             FileManagerCore.Controller fileController = new FileManagerCore.Controller();
-            fileController.SaveFile(false, $"{extractedType.TypeName}.csv", "ID,FullName,Name,Type");
+            fileController.SaveFile(false, $"{extractedType.TypeName}.csv", "ID,PathName,Name,Type,IsNullable");
 
-            for (int i = 0; i < extractedType.Items.Count; i++)
+            for (int i = 0; i < extractedType.Fields.Count; i++)
             {
-                var item = extractedType.Items[i];
-                fileController.SaveFile(true, $"{extractedType.TypeName}.csv", $"{item.ID},{item.FullName},{item.Name},{item.Type}");
+                var item = extractedType.Fields[i];
+                fileController.SaveFile(true, $"{extractedType.TypeName}.csv", $"{item.ID},{item.PathName},{item.Name},{item.Type},{item.IsNullable}");
             }
+        }
+
+        public void testType1()
+        {
+            Core core = new Core();
+            Console.WriteLine($"type is {core.GetTypeName(typeof(int))}");
+            Console.WriteLine($"type is {core.GetTypeName(typeof(long))}");
+            Console.WriteLine($"type is {core.GetTypeName(typeof(short))}");
+            Console.WriteLine($"type is {core.GetTypeName(typeof(byte))}");
+            Console.WriteLine($"type is {core.GetTypeName(typeof(double))}");
+            Console.WriteLine($"type is {core.GetTypeName(typeof(decimal))}");
+            Console.WriteLine($"type is {core.GetTypeName(typeof(Guid))}");
+            Console.WriteLine($"type is {core.GetTypeName(typeof(DateTime))}");
+            Console.WriteLine($"type is {core.GetTypeName(typeof(string))}");
+            Console.WriteLine($"type is {core.GetTypeName(typeof(bool))}");
+            Console.WriteLine($"type is {core.GetTypeName(typeof(char))}");
+            Console.WriteLine($"type is {core.GetTypeName(typeof(short))}");
+            Console.WriteLine($"type is {core.GetTypeName(typeof(sbyte))}");
+            Console.WriteLine($"type is {core.GetTypeName(typeof(float))}");
+            Console.WriteLine($"type is {core.GetTypeName(typeof(uint))}");
+            Console.WriteLine($"type is {core.GetTypeName(typeof(ulong))}");
+            Console.WriteLine($"type is {core.GetTypeName(typeof(ushort))}");
+            Console.WriteLine($"type is {core.GetTypeName(typeof(List<int>))}");
+        }
+
+        public void testType2()
+        {
+            var type = typeof(List<TestClass>);
+            var typeInfo = type.GetTypeInfo();
+
+            Console.WriteLine("List<TestClass>");
+            Console.WriteLine($"Name is {type.Name}");
+            Console.WriteLine($"FullName is {type.FullName}");
+            Console.WriteLine($"Element Type is {type.GetGenericArguments()[0].Name}");
+        }
+
+        public void testType3()
+        {
+            var type = typeof(ICollection<TestClass>);
+            var typeInfo = type.GetTypeInfo();
+
+            Console.WriteLine("ICollection<TestClass>");
+            Console.WriteLine($"Name is {type.Name}");
+            Console.WriteLine($"FullName is {type.FullName}");
+            Console.WriteLine($"Element Type is {type.GetGenericArguments()[0].Name}");
+        }
+
+        public class TestClass
+        {
+            public string TestProp1 { get; set; }
         }
     }
 }

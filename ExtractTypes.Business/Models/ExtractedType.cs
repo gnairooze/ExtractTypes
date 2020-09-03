@@ -8,13 +8,13 @@ namespace ExtractTypes.Business.Models
     {
         public ExtractedType()
         {
-            this.Items = new List<ExtractedItem>();
+            this.Fields = new List<ExtractedItem>();
         }
 
         public string TypeFullName { get; set; }
         public string TypeName { get; set; }
         public string AssemblyFullName { get; set; }
-        public List<ExtractedItem> Items { get; private set; }
+        public List<ExtractedItem> Fields { get; private set; }
 
         public override string ToString()
         {
@@ -22,10 +22,10 @@ namespace ExtractTypes.Business.Models
             bld.AppendLine($"AssemblyFullName: {AssemblyFullName}");
             bld.AppendLine($"TypeFullName: {TypeFullName}");
 
-            for (int i = 0; i < Items.Count; i++)
+            for (int i = 0; i < Fields.Count; i++)
             {
-                var item = Items[i];
-                bld.AppendLine($"Property {i + 1} of {Items.Count}");
+                var item = Fields[i];
+                bld.AppendLine($"Property {i + 1} of {Fields.Count}");
                 bld.AppendLine(item.ToString());
             }
             return bld.ToString();
