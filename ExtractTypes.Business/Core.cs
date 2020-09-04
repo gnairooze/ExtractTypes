@@ -244,55 +244,62 @@ namespace ExtractTypes.Business
         protected int? getTypeSize(PropertyInfo property)
         {
             //handle string
-            if(property.PropertyType == typeof(string))
+            try
             {
-                var length = maxLength(property).Value;
-
-                if(length == -1)
+                if (property.PropertyType == typeof(string))
                 {
-                    return -1; //something like  mssql nvarchar(max)
-                }
-                else
-                {
-                    return length * 2;//to repsect unicode characters that take 2 bytes each
-                }
-            }
+                    var length = maxLength(property).Value;
 
-            if (property.PropertyType == typeof(DateTime))
-            {
-                return 8;
-            }
-
-
-            if (property.PropertyType == typeof(bool))
-            {
-                return 1;
-            }
-
-            if (property.PropertyType.GetTypeInfo().IsEnum)
-            {
-                string[] names = Enum.GetNames(property.PropertyType);
-                int length = 0;
-                foreach (var name in names)
-                {
-                    int tempLength = name.Length;
-
-                    if (tempLength > length)
+                    if (length == -1)
                     {
-                        length = tempLength;
+                        return -1; //something like  mssql nvarchar(max)
+                    }
+                    else
+                    {
+                        return length * 2;//to repsect unicode characters that take 2 bytes each
                     }
                 }
 
-                return length * 2; //I treated it as unicode string every character occupies 2 bytes
-            }
+                if (property.PropertyType == typeof(DateTime))
+                {
+                    return 8;
+                }
 
-            //handle simple types
-            if (isSimple(property.PropertyType))
+
+                if (property.PropertyType == typeof(bool))
+                {
+                    return 1;
+                }
+
+                if (property.PropertyType.GetTypeInfo().IsEnum)
+                {
+                    string[] names = Enum.GetNames(property.PropertyType);
+                    int length = 0;
+                    foreach (var name in names)
+                    {
+                        int tempLength = name.Length;
+
+                        if (tempLength > length)
+                        {
+                            length = tempLength;
+                        }
+                    }
+
+                    return length * 2; //I treated it as unicode string every character occupies 2 bytes
+                }
+
+                //handle simple types
+                if (isSimple(property.PropertyType))
+                {
+                    return Marshal.SizeOf(property.PropertyType);
+                }
+
+                return null;
+            }
+            catch
             {
-                return Marshal.SizeOf(property.PropertyType);
-            }
-
-            return null;
+                return -2;
+            }            
         }
     }
 }
