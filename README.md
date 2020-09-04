@@ -1,4 +1,5 @@
 # Extract Types
+![.NET Core](https://github.com/gnairooze/ExtractTypes/workflows/.NET%20Core/badge.svg?branch=master)
 
 Extract type properties from dotnet assembly and write it to CSV file.
 
