@@ -65,11 +65,11 @@ namespace Extractor
             Console.WriteLine("==================================");
             Console.WriteLine("Export Type Properties to CSV file");
             Console.WriteLine("==================================");
-            Console.WriteLine("--help\tshow this help. This help also shows when no arguments added");
+            Console.WriteLine("--help\tshow this help. This help also shows when no arguments added.");
             Console.WriteLine();
-            Console.WriteLine("--assembly-Path\tset the assembly path that contains the type");
+            Console.WriteLine("--assembly-Path\tset the assembly path that contains the type.");
             Console.WriteLine();
-            Console.WriteLine("--type-fullname\tset the type full name to be exported");
+            Console.WriteLine("--type-fullname\tset the type full name to be exported.");
             Console.WriteLine();
             Console.WriteLine("==================================");
             Console.WriteLine();

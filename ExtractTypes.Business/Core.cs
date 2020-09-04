@@ -288,6 +288,45 @@ namespace ExtractTypes.Business
                     return length * 2; //I treated it as unicode string every character occupies 2 bytes
                 }
 
+                if (isNullable(property.PropertyType))
+                {
+
+                    var innerType = property.PropertyType.GetTypeInfo().GetGenericArguments()[0];
+
+                    if (innerType == typeof(DateTime))
+                    {
+                        return 8;
+                    }
+
+
+                    if (innerType == typeof(bool))
+                    {
+                        return 1;
+                    }
+
+                    if (innerType.GetTypeInfo().IsEnum)
+                    {
+                        string[] names = Enum.GetNames(innerType);
+                        int length = 0;
+                        foreach (var name in names)
+                        {
+                            int tempLength = name.Length;
+
+                            if (tempLength > length)
+                            {
+                                length = tempLength;
+                            }
+                        }
+
+                        return length * 2; //I treated it as unicode string every character occupies 2 bytes
+                    }
+
+                    if (isSimple(innerType))
+                    {
+                        return Marshal.SizeOf(innerType);
+                    }
+                }
+
                 //handle simple types
                 if (isSimple(property.PropertyType))
                 {
