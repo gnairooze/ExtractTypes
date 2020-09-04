@@ -1,7 +1,10 @@
 ﻿using ExtractTypes.Business;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+using System.Linq;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace Extractor
@@ -136,9 +139,224 @@ namespace Extractor
             Console.WriteLine($"Element Type is {type.GetGenericArguments()[0].Name}");
         }
 
+        public void testAttributes1()
+        {
+            var type = typeof(TestClass);
+            var properties = type.GetProperties();
+            var attributes = properties[0].CustomAttributes;
+
+            foreach (var attribute in attributes)
+            {
+                Console.WriteLine($"{attribute.AttributeType.Name}");
+                foreach (var arg in attribute.ConstructorArguments)
+                {
+                    Console.WriteLine($"{arg.ArgumentType.Name}:{arg.Value}");
+                }
+                foreach (var arg in attribute.NamedArguments)
+                {
+                    Console.WriteLine($"{arg.MemberName}:{arg.TypedValue.Value}");
+                }
+                Console.WriteLine("------------------------");
+            }
+        }
+
+        public void testAttributes2()
+        {
+            var type = typeof(TestClass);
+            var properties = type.GetProperties();
+            bool isRequired = properties[0].CustomAttributes.Any(a => a.AttributeType.Name == "RequiredAttribute");
+
+            Console.WriteLine($"Name: {properties[0].Name}, IsRequired: {isRequired}");
+
+            isRequired = properties[1].CustomAttributes.Any(a => a.AttributeType.Name == "RequiredAttribute");
+
+            Console.WriteLine($"Name: {properties[1].Name}, IsRequired: {isRequired}");
+        }
+
+        public void testAttributes3()
+        {
+            var type = typeof(TestClass);
+            var properties = type.GetProperties();
+
+            foreach (var property in properties)
+            {
+                Console.WriteLine($"Name: {property.Name}, MaxLength: {maxLength(property)}");
+            }
+        }
+
+        public void testAttributes4()
+        {
+            var type = typeof(TestClass);
+            var properties = type.GetProperties();
+
+            foreach (var property in properties)
+            {
+                Console.WriteLine($"Name: {property.Name}, MinLength: {minLength(property)}");
+            }
+        }
+
+        public void testTypeSize1()
+        {
+            var type = typeof(int);
+            Console.WriteLine($"Size of {type.Name} is {Marshal.SizeOf(type)}");
+        }
+
+        public void testTypeSize2()
+        {
+            var properties = typeof(TestClass).GetProperties();
+
+            foreach (var property in properties)
+            {
+                Console.WriteLine($"Size of {property.Name} is {getTypeSize(property)}");
+            }
+            
+        }
+
+        protected bool isNullable(Type type)
+        {
+            var typeInfo = type.GetTypeInfo();
+            if (typeInfo.IsGenericType && typeInfo.GetGenericTypeDefinition() == typeof(Nullable<>))
+            {
+                return true;
+            }
+
+            return false;
+        }
+
+        protected bool isSimple(Type type)
+        {
+            var typeInfo = type.GetTypeInfo();
+            if (isNullable(type))
+            {
+                // nullable type, check if the nested type is simple.
+                return isSimple(typeInfo.GetGenericArguments()[0]);
+            }
+            return typeInfo.IsPrimitive
+              || typeInfo.IsEnum
+              || type.Equals(typeof(string))
+              || type.Equals(typeof(decimal))
+              || type.Equals(typeof(DateTime))
+              || type.Equals(typeof(Guid));
+        }
+
+        protected int? getTypeSize(PropertyInfo property)
+        {
+            //handle string
+            if (property.PropertyType == typeof(string))
+            {
+                var length = maxLength(property).Value;
+
+                if (length == -1)
+                {
+                    return -1; //something like  mssql nvarchar(max)
+                }
+                else
+                {
+                    return length * 2;//to repsect unicode characters that take 2 bytes each
+                }
+            }
+
+            if(property.PropertyType == typeof(DateTime))
+            {
+                return 8;
+            }
+
+            if (property.PropertyType == typeof(bool))
+            {
+                return 1;
+            }
+
+            if (property.PropertyType.GetTypeInfo().IsEnum)
+            {
+                string[] names = Enum.GetNames(property.PropertyType);
+                int length = 0;
+                foreach (var name in names)
+                {
+                    int tempLength = name.Length;
+
+                    if(tempLength > length)
+                    {
+                        length = tempLength;
+                    }
+                }
+
+                return length*2; //I treated it as unicode string every character occupies 2 bytes
+            }
+
+            //handle simple types
+            if (isSimple(property.PropertyType))
+            {
+                return Marshal.SizeOf(property.PropertyType);
+            }
+
+            return null;
+        }
+
+        private int? minLength(PropertyInfo property)
+        {
+            if (property.PropertyType != typeof(string))
+            {
+                return null;
+            }
+
+            var attribute = property.CustomAttributes.SingleOrDefault(a => a.AttributeType.Name == "StringLengthAttribute");
+
+            if (attribute != null && attribute.ConstructorArguments != null && attribute.NamedArguments.Count > 0)
+            {
+
+                var arg = attribute.NamedArguments.SingleOrDefault(a => a.MemberName == "MinimumLength");
+
+                if (arg != null && arg.TypedValue != null && arg.TypedValue.ArgumentType == typeof(int))
+                {
+                    return (int)arg.TypedValue.Value;
+                }
+            }
+
+            return null;
+        }
+        private int? maxLength(PropertyInfo property)
+        {
+            if (property.PropertyType != typeof(string))
+            {
+                return null;
+            }
+
+            var attribute = property.CustomAttributes.SingleOrDefault(a => a.AttributeType.Name == "MaxLengthAttribute");
+
+            if (attribute != null && attribute.ConstructorArguments != null && attribute.ConstructorArguments.Count > 0 && attribute.ConstructorArguments[0].ArgumentType == typeof(int))
+            {
+                return (int)attribute.ConstructorArguments[0].Value;
+            }
+
+            attribute = property.CustomAttributes.SingleOrDefault(a => a.AttributeType.Name == "StringLengthAttribute");
+
+            if (attribute != null && attribute.ConstructorArguments != null && attribute.ConstructorArguments.Count > 0 && attribute.ConstructorArguments[0].ArgumentType == typeof(int))
+            {
+                return (int)attribute.ConstructorArguments[0].Value;
+            }
+
+
+            return -1;
+        }
         public class TestClass
         {
+            [Required]
+            [StringLength(50, MinimumLength = 30)]
+            [MaxLength(50)]
             public string TestProp1 { get; set; }
+
+            public string TestProp2 { get; set; }
+            [StringLength(40, MinimumLength = 30)]
+            public string TestProp3 { get; set; }
+
+            public DateTime BirthDate { get; set; }
+            public Guid ID { get; set; }
+            public Decimal Price { get; set; }
+            
+            public Status ProcessStatus { get; set; }
+            
+            public enum Status { NotSet = 0, Completed = 1, NotStarted = 2}
+
         }
     }
 }

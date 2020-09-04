@@ -8,10 +8,13 @@ namespace Extractor
 {
     class Program
     {
+        #region fields
         static List<string> EnhancedArgs { get; set; }
         static string AssemblyPath { get; set; }
         static string TypeFullName { get; set; }
         static bool HelpMode { get; set; }
+        #endregion
+
         static void Main(string[] args)
         {
             EnhancedArgs = args.ToList();
@@ -22,7 +25,7 @@ namespace Extractor
         private static void Start()
         {
             SetArguments();
-            RunReal();
+            Run();
         }
 
         private static void SetArguments()
@@ -76,7 +79,7 @@ namespace Extractor
             Console.WriteLine("==================================");
         }
 
-        private static void RunReal()
+        private static void Run()
         {
             if (HelpMode)
             {
@@ -93,14 +96,14 @@ namespace Extractor
             var extractedType = core.ExtractType(AssemblyPath, TypeFullName);
 
             FileManagerCore.Controller fileController = new FileManagerCore.Controller();
-            string columns = "ID,PathName,Name,Type,IsNullable";
+            string columns = "ID,PathName,Name,Type,IsNullable,IsRequired,MaxLength,MinLength,SizeInBytes";
             string resultFilePath = Path.Combine(resultFileParentPath, $"{extractedType.TypeName}.csv");
             fileController.SaveFile(false, resultFilePath, columns);
 
             for (int i = 0; i < extractedType.Fields.Count; i++)
             {
                 var item = extractedType.Fields[i];
-                fileController.SaveFile(true, resultFilePath, $"{item.ID},{item.PathName},{item.Name},{item.Type},{item.IsNullable}");
+                fileController.SaveFile(true, resultFilePath, $"{item.ID},{item.PathName},{item.Name},{item.Type},{item.IsNullable},{item.IsRequired},{item.MaxLength},{item.MinLength},{item.SizeInBytes}");
             }
         }
     }

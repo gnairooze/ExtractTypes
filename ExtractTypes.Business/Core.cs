@@ -3,7 +3,10 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Text;
+using System.Xml.Schema;
 
 namespace ExtractTypes.Business
 {
@@ -93,7 +96,11 @@ namespace ExtractTypes.Business
                     PathName = $"{propertyPath}.{propertyName}",
                     Name = propertyName,
                     Type = GetTypeName(property.PropertyType),
-                    IsNullable = isNullable(property.PropertyType)
+                    IsNullable = isNullable(property.PropertyType),
+                    IsRequired = isRequired(property),
+                    MaxLength = maxLength(property),
+                    MinLength = minLength(property),
+                    SizeInBytes = getTypeSize(property)
                 };
                 extractItem.Parents.AddRange(parents);
                 extractedType.Fields.Add(extractItem);
@@ -111,7 +118,59 @@ namespace ExtractTypes.Business
             }
         }
 
-        private string getPropertyName(PropertyInfo property)
+        protected int? maxLength(PropertyInfo property)
+        {
+            if (property.PropertyType != typeof(string))
+            {
+                return null;
+            }
+
+            var attribute = property.CustomAttributes.SingleOrDefault(a => a.AttributeType.Name == "MaxLengthAttribute");
+
+            if (attribute != null && attribute.ConstructorArguments != null && attribute.ConstructorArguments.Count > 0 && attribute.ConstructorArguments[0].ArgumentType == typeof(int))
+            {
+                return (int)attribute.ConstructorArguments[0].Value;
+            }
+
+            attribute = property.CustomAttributes.SingleOrDefault(a => a.AttributeType.Name == "StringLengthAttribute");
+
+            if (attribute != null && attribute.ConstructorArguments != null && attribute.ConstructorArguments.Count > 0 && attribute.ConstructorArguments[0].ArgumentType == typeof(int))
+            {
+                return (int)attribute.ConstructorArguments[0].Value;
+            }
+
+
+            return -1;
+        }
+
+        protected int? minLength(PropertyInfo property)
+        {
+            if (property.PropertyType != typeof(string))
+            {
+                return null;
+            }
+
+            var attribute = property.CustomAttributes.SingleOrDefault(a => a.AttributeType.Name == "StringLengthAttribute");
+
+            if (attribute != null && attribute.ConstructorArguments != null && attribute.NamedArguments.Count > 0)
+            {
+
+                var arg = attribute.NamedArguments.SingleOrDefault(a => a.MemberName == "MinimumLength");
+
+                if(arg != null && arg.TypedValue != null && arg.TypedValue.ArgumentType == typeof(int))
+                {
+                    return (int)arg.TypedValue.Value;
+                }
+            }
+
+            return null;
+        }
+        protected bool isRequired(PropertyInfo property)
+        {
+            return property.CustomAttributes.Any(a => a.AttributeType.Name == "RequiredAttribute");
+        }
+
+        protected string getPropertyName(PropertyInfo property)
         {
             var interfaces = property.PropertyType.GetInterfaces();
 
@@ -125,7 +184,7 @@ namespace ExtractTypes.Business
             return property.Name;
         }
 
-        private Type GetTypeEnhanced(Type type)
+        protected Type GetTypeEnhanced(Type type)
         {
             var typeInfo = type.GetTypeInfo();
             if (typeInfo.IsGenericType && typeInfo.GetGenericTypeDefinition() != typeof(Nullable<>))
@@ -180,6 +239,60 @@ namespace ExtractTypes.Business
             }
 
             return type.Name;
+        }
+    
+        protected int? getTypeSize(PropertyInfo property)
+        {
+            //handle string
+            if(property.PropertyType == typeof(string))
+            {
+                var length = maxLength(property).Value;
+
+                if(length == -1)
+                {
+                    return -1; //something like  mssql nvarchar(max)
+                }
+                else
+                {
+                    return length * 2;//to repsect unicode characters that take 2 bytes each
+                }
+            }
+
+            if (property.PropertyType == typeof(DateTime))
+            {
+                return 8;
+            }
+
+
+            if (property.PropertyType == typeof(bool))
+            {
+                return 1;
+            }
+
+            if (property.PropertyType.GetTypeInfo().IsEnum)
+            {
+                string[] names = Enum.GetNames(property.PropertyType);
+                int length = 0;
+                foreach (var name in names)
+                {
+                    int tempLength = name.Length;
+
+                    if (tempLength > length)
+                    {
+                        length = tempLength;
+                    }
+                }
+
+                return length * 2; //I treated it as unicode string every character occupies 2 bytes
+            }
+
+            //handle simple types
+            if (isSimple(property.PropertyType))
+            {
+                return Marshal.SizeOf(property.PropertyType);
+            }
+
+            return null;
         }
     }
 }
